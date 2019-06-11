@@ -1,5 +1,5 @@
 syntax = "proto3";
-package libpubsub;
+package pb;
 
 // PubSubService is used to expose libp2p pubsub
 // access over a gRPC API for use with other applications
