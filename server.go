@@ -66,7 +66,29 @@ func (s *Server) ListPeers(ctx context.Context, req *pb.ListPeersRequest) (*pb.L
 
 // Subscribe is used to subscribe to a topic and receive messages
 func (s *Server) Subscribe(req *pb.SubscribeRequest, stream pb.PubSubService_SubscribeServer) error {
-	return errors.New("coming soon")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	sub, err := s.ps.Subscribe(req.GetTopic())
+	if err != nil {
+		return err
+	}
+	for {
+		proto2Msg, err := sub.Next(ctx)
+		if err != nil {
+			return err
+		}
+		proto3Msg := &pb.PubSubMessageResponse{
+			From:      []byte(proto2Msg.GetFrom().String()),
+			Data:      proto2Msg.GetData(),
+			Seqno:     proto2Msg.GetSeqno(),
+			TopicIDs:  proto2Msg.GetTopicIDs(),
+			Signature: proto2Msg.GetSignature(),
+			Key:       proto2Msg.GetKey(),
+		}
+		if err := stream.Send(proto3Msg); err != nil {
+			return err
+		}
+	}
 }
 
 // Publish is used to send a stream of messages to a pubsub topic.
