@@ -35,7 +35,7 @@ func Test_Server(t *testing.T) {
 		if err := NewServer(
 			ctx,
 			pubsub,
-			logger,
+			tutil.NewLogger(t),
 			true,
 			serverProtocol,
 			serverAddr,
