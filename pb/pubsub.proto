@@ -1,36 +1,83 @@
 syntax = "proto3";
 package libpubsub;
 
-
-
+// PubSubService is used to expose libp2p pubsub
+// access over a gRPC API for use with other applications
+// that may not want to deal with integration of libp2p pubsub
 service PubSubService {
-    // unary rpc
-    rpc GetTopics(Empty) returns (Topics) { };
-    // server-streaming rpc
-    rpc Subscribe(SubscribeRequest) returns (stream PubSubMessage) { };
-    // Publish is used to send a stream of messages
-    // on a pubsub topic
-    rpc Publish(stream PublishRequest) returns (Empty) { };
+    // GetTopics is used to return a list of all
+    // known topics the pubsub instance is subscribed to.
+    // 
+    // This is a unary rpc
+    rpc GetTopics(Empty) returns (TopicsResponse) { };
+
+    // ListPeers is used to return a list of peers subscribed
+    // to a given topic or topics.
+    //
+    // This is a unary rpc
+    rpc ListPeers(ListPeersRequest) returns (ListPeersResponse) { };
+
+    // Subscribe is used to subscribe to a topic and receive messages
+    // Server will stream the messages received on the topic specified 
+    // during the initial subscription call, and send each message
+    // back to the client as it is received. 
+    //
+    // This is a server streaming rpc
+    rpc Subscribe(SubscribeRequest) returns (stream PubSubMessageResponse) { };
+
+    // Publish is used to send a stream of messages to a pubsub topic.
+    // 
+    // This is a client streaming rpc
+    rpc Publish(stream PublishRequest) returns (Empty) { };   
 }
 
+// Empty message is used for requests
+// and responses that dont need any particular
+// data.
 message Empty {} 
 
-// PublishRequest is used to publish
-// data to the specified topic
+// ListPeersRequest is used to return a list of
+// peers that are subscribed to the given topic(s)
+message ListPeersRequest {
+    // the topics for which we should
+    // list peers for
+    repeated string topics = 1;
+}
+
+// ListPeersResponse is a response to a ListPeersRequest
+message ListPeersResponse {
+    message Peer {
+        string topic = 1;
+        string peerID = 2;
+    }
+    repeated Peer peers = 1;
+}
+
+// PublishRequest is a message used to publish data to a topic
 message PublishRequest {
     string topic = 1;
     bytes  data  = 2;
 }
 
+// SubscribeRequest is used to initiate a subscription
+// to a given pubsub topic and stream received messages
 message SubscribeRequest {
+    // the topic we should subscribe to
     string topic = 1;
+    // indicates whether the server should 
+    // perform service discover for peers on the same topic
+    bool discover = 2;
 }
 
-message Topics {
+// Topics is a response that returns
+// the names of all known topics
+message TopicsResponse {
     repeated string names = 1;
 }
 
-message PubSubMessage {
+// PubSubMessageResposne is a received pubsub message
+// sent as a response to a subscription rpc call
+message PubSubMessageResponse {
     bytes from = 1;
     bytes data = 2;
     bytes seqno = 3;
