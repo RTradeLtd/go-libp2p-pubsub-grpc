@@ -2,6 +2,7 @@ package libpubsubgrpc
 
 import (
 	"context"
+	"errors"
 	"net"
 
 	"github.com/RTradeLtd/go-libp2p-pubsub-grpc/pb"
@@ -48,7 +49,7 @@ func NewServer(ctx context.Context, pubsub *ps.PubSub, logger *zap.SugaredLogger
 
 // GetTopics is used to return a list of all known topics the pubsub instance is subscribed to.
 func (s *Server) GetTopics(ctx context.Context, req *pb.Empty) (*pb.TopicsResponse, error) {
-	return nil, nil
+	return &pb.TopicsResponse{Names: s.ps.GetTopics()}, nil
 }
 
 // ListPeers is used to return a list of peers subscribed to a given topic or topics
@@ -65,10 +66,10 @@ func (s *Server) ListPeers(ctx context.Context, req *pb.ListPeersRequest) (*pb.L
 
 // Subscribe is used to subscribe to a topic and receive messages
 func (s *Server) Subscribe(req *pb.SubscribeRequest, stream pb.PubSubService_SubscribeServer) error {
-	return nil
+	return errors.New("coming soon")
 }
 
 // Publish is used to send a stream of messages to a pubsub topic.
 func (s *Server) Publish(stream pb.PubSubService_PublishServer) error {
-	return nil
+	return errors.New("coming soon")
 }
