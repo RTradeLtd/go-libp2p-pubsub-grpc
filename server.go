@@ -53,7 +53,14 @@ func (s *Server) GetTopics(ctx context.Context, req *pb.Empty) (*pb.TopicsRespon
 
 // ListPeers is used to return a list of peers subscribed to a given topic or topics
 func (s *Server) ListPeers(ctx context.Context, req *pb.ListPeersRequest) (*pb.ListPeersResponse, error) {
-	return nil, nil
+	var peers []*pb.ListPeersResponse_Peer
+	for _, topic := range req.GetTopics() {
+		pids := s.ps.ListPeers(topic)
+		for _, pid := range pids {
+			peers = append(peers, &pb.ListPeersResponse_Peer{Topic: topic, PeerID: pid.String()})
+		}
+	}
+	return &pb.ListPeersResponse{Peers: peers}, nil
 }
 
 // Subscribe is used to subscribe to a topic and receive messages
