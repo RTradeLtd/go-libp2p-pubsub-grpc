@@ -81,7 +81,7 @@ message PubSubMessageResponse {
     bytes from = 1;
     bytes data = 2;
     bytes seqno = 3;
-    string topicIDs = 4;
+    repeated string topicIDs = 4;
     bytes signature = 5;
     bytes key = 6;
 }
