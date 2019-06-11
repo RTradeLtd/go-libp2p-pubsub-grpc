@@ -2,7 +2,6 @@ package libpubsubgrpc
 
 import (
 	"context"
-	"errors"
 	"net"
 
 	"github.com/RTradeLtd/go-libp2p-pubsub-grpc/pb"
@@ -77,6 +76,8 @@ func (s *Server) Subscribe(req *pb.SubscribeRequest, stream pb.PubSubService_Sub
 		if err != nil {
 			return err
 		}
+		// since libp2p-pubsub is using proto2 and we are using proto3
+		// we need to copy fields, and format as needed
 		proto3Msg := &pb.PubSubMessageResponse{
 			From:      []byte(proto2Msg.GetFrom().String()),
 			Data:      proto2Msg.GetData(),
@@ -93,5 +94,13 @@ func (s *Server) Subscribe(req *pb.SubscribeRequest, stream pb.PubSubService_Sub
 
 // Publish is used to send a stream of messages to a pubsub topic.
 func (s *Server) Publish(stream pb.PubSubService_PublishServer) error {
-	return errors.New("coming soon")
+	for {
+		msg, err := stream.Recv()
+		if err != nil {
+			return err
+		}
+		if err := s.ps.Publish(msg.GetTopic(), msg.GetData()); err != nil {
+			return err
+		}
+	}
 }
