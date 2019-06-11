@@ -4,6 +4,8 @@ import (
 	"context"
 	"net"
 
+	"sync"
+
 	"github.com/RTradeLtd/go-libp2p-pubsub-grpc/pb"
 	ps "github.com/libp2p/go-libp2p-pubsub"
 	"go.uber.org/zap"
@@ -18,7 +20,7 @@ type Server struct {
 }
 
 // NewServer is used to intiialize a pubsub grpc server and run it
-func NewServer(ctx context.Context, pubsub *ps.PubSub, logger *zap.SugaredLogger, insecure bool, protocol, url string) error {
+func NewServer(ctx context.Context, wg *sync.WaitGroup, pubsub *ps.PubSub, logger *zap.SugaredLogger, insecure bool, protocol, url string) error {
 	lis, err := net.Listen(protocol, url)
 	if err != nil {
 		return err
@@ -33,7 +35,9 @@ func NewServer(ctx context.Context, pubsub *ps.PubSub, logger *zap.SugaredLogger
 	srv := &Server{ps: pubsub}
 	gServer := grpc.NewServer(serverOpts...)
 	pb.RegisterPubSubServiceServer(gServer, srv)
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for {
 			select {
 			case <-ctx.Done():
