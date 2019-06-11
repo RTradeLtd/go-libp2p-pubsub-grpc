@@ -101,10 +101,14 @@ func (s *Server) Subscribe(req *pb.SubscribeRequest, stream pb.PubSubService_Sub
 
 // Publish is used to send a stream of messages to a pubsub topic.
 func (s *Server) Publish(stream pb.PubSubService_PublishServer) error {
+	// defer stream closure
+	defer stream.SendAndClose(&pb.Empty{})
 	for {
 		msg, err := stream.Recv()
 		if err != nil && err == io.EOF {
 			return nil
+		} else if err != nil {
+			return err
 		}
 		if err := s.ps.Publish(msg.GetTopic(), msg.GetData()); err != nil {
 			return err
