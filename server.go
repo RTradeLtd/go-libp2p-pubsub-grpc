@@ -6,6 +6,8 @@ import (
 
 	"sync"
 
+	"io"
+
 	"github.com/RTradeLtd/go-libp2p-pubsub-grpc/pb"
 	ps "github.com/libp2p/go-libp2p-pubsub"
 	"go.uber.org/zap"
@@ -69,16 +71,17 @@ func (s *Server) ListPeers(ctx context.Context, req *pb.ListPeersRequest) (*pb.L
 
 // Subscribe is used to subscribe to a topic and receive messages
 func (s *Server) Subscribe(req *pb.SubscribeRequest, stream pb.PubSubService_SubscribeServer) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	sub, err := s.ps.Subscribe(req.GetTopic())
 	if err != nil {
 		return err
 	}
 	for {
-		proto2Msg, err := sub.Next(ctx)
+		proto2Msg, err := sub.Next(stream.Context())
 		if err != nil {
 			return err
+		}
+		if proto2Msg == nil {
+			continue
 		}
 		// since libp2p-pubsub is using proto2 and we are using proto3
 		// we need to copy fields, and format as needed
@@ -100,8 +103,8 @@ func (s *Server) Subscribe(req *pb.SubscribeRequest, stream pb.PubSubService_Sub
 func (s *Server) Publish(stream pb.PubSubService_PublishServer) error {
 	for {
 		msg, err := stream.Recv()
-		if err != nil {
-			return err
+		if err != nil && err == io.EOF {
+			return nil
 		}
 		if err := s.ps.Publish(msg.GetTopic(), msg.GetData()); err != nil {
 			return err
