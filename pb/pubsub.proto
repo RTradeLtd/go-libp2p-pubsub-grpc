@@ -1,0 +1,41 @@
+syntax = "proto3";
+package libpubsub;
+
+
+
+service PubSubService {
+    // unary rpc
+    rpc GetTopics(Empty) returns (Topics) { };
+    // server-streaming rpc
+    rpc Subscribe(SubscribeRequest) returns (stream PubSubMessage) { };
+    // Publish is used to send a stream of messages
+    // on a pubsub topic
+    rpc Publish(stream PublishRequest) returns (Empty) { };
+}
+
+message Empty {} 
+
+// PublishRequest is used to publish
+// data to the specified topic
+message PublishRequest {
+    string topic = 1;
+    bytes  data  = 2;
+}
+
+message SubscribeRequest {
+    string topic = 1;
+}
+
+message Topics {
+    repeated string names = 1;
+}
+
+message PubSubMessage {
+    bytes from = 1;
+    bytes data = 2;
+    bytes seqno = 3;
+    string topicIDs = 4;
+    bytes signature = 5;
+    bytes key = 6;
+}
+  
