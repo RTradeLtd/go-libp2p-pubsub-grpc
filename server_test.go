@@ -67,6 +67,9 @@ func Test_Server(t *testing.T) {
 			msg, err := subStream.Recv()
 			if err != nil && err == io.EOF {
 				return
+			} else if err != nil {
+				fmt.Println("got error", err.Error())
+				return
 			}
 
 			if msg.GetFrom() != nil {
