@@ -34,8 +34,9 @@ func Test_Server(t *testing.T) {
 	go func() {
 		if err := NewServer(
 			ctx,
+			wg,
 			pubsub,
-			tutil.NewLogger(t),
+			logger,
 			true,
 			serverProtocol,
 			serverAddr,
@@ -45,4 +46,5 @@ func Test_Server(t *testing.T) {
 	}()
 	time.Sleep(time.Second * 10)
 	cancel()
+	wg.Wait()
 }
