@@ -37,12 +37,14 @@ func Test_Server(t *testing.T) {
 		cancel()
 		t.Fatal(err)
 	}
+	tutil.Bootstrap(ctx, logger.Desugar(), dht, host, tutil.DefaultBootstrapPeers())
 	go func() {
 		if err := NewServer(
 			ctx,
 			wg,
 			pubsub,
 			discovery.NewRoutingDiscovery(dht),
+			host,
 			logger,
 			true,
 			serverProtocol,
@@ -130,7 +132,7 @@ func Test_Server(t *testing.T) {
 	}
 	// we need to sleep to give enough time for our goroutine
 	// that processes messages to have enough time to pick up the sent messages
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * 30)
 	// end publishing test
 	client.Close()
 	cancel()

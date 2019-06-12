@@ -2,7 +2,6 @@ package libpubsubgrpc
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"io"
 
 	"github.com/RTradeLtd/go-libp2p-pubsub-grpc/pb"
+	"github.com/libp2p/go-libp2p-core/host"
 	discovery "github.com/libp2p/go-libp2p-discovery"
 	ps "github.com/libp2p/go-libp2p-pubsub"
 	"go.uber.org/zap"
@@ -23,10 +23,11 @@ type Server struct {
 	pb pb.PubSubServiceServer
 	ps *ps.PubSub
 	sd *discovery.RoutingDiscovery
+	h  host.Host
 }
 
 // NewServer is used to intiialize a pubsub grpc server and run it
-func NewServer(ctx context.Context, wg *sync.WaitGroup, pubsub *ps.PubSub, sd *discovery.RoutingDiscovery, logger *zap.SugaredLogger, insecure bool, protocol, url string) error {
+func NewServer(ctx context.Context, wg *sync.WaitGroup, pubsub *ps.PubSub, sd *discovery.RoutingDiscovery, h host.Host, logger *zap.SugaredLogger, insecure bool, protocol, url string) error {
 	lis, err := net.Listen(protocol, url)
 	if err != nil {
 		return err
@@ -38,7 +39,7 @@ func NewServer(ctx context.Context, wg *sync.WaitGroup, pubsub *ps.PubSub, sd *d
 			return err
 		}
 	}
-	srv := &Server{ps: pubsub, sd: sd}
+	srv := &Server{ps: pubsub, sd: sd, h: h}
 	gServer := grpc.NewServer(serverOpts...)
 	pb.RegisterPubSubServiceServer(gServer, srv)
 	wg.Add(1)
@@ -151,7 +152,7 @@ func (s *Server) handleDiscover(ns string) error {
 	}
 	for {
 		for peer := range peerChan {
-			_, _ = fmt.Printf("%+v\n", peer)
+			s.h.Connect(context.Background(), peer)
 		}
 	}
 }

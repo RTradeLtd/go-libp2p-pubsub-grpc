@@ -8,6 +8,7 @@ require (
 	github.com/golang/protobuf v1.3.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/ipfs/go-datastore v0.0.5
+	github.com/ipfs/go-ipfs-config v0.0.6
 	github.com/ipfs/go-ipfs-keystore v0.0.1
 	github.com/ipfs/go-ipns v0.0.1
 	github.com/libp2p/go-libp2p v0.1.1
