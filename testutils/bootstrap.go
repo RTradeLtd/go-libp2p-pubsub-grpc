@@ -67,10 +67,10 @@ func Bootstrap(ctx context.Context, logger *zap.Logger, dt *dht.IpfsDHT, hst hos
 			defer wg.Done()
 			err := hst.Connect(ctx, pinfo)
 			if err != nil {
-				fmt.Println("error", err.Error())
+				logger.Error("failed to connect to peer", zap.String("peer.id", pinfo.ID.String()), zap.Error(err))
 				return
 			}
-			fmt.Println("Connected to", pinfo.ID)
+			logger.Info("successfully conneted to peer", zap.String("peer.id", pinfo.ID.String()))
 			connected <- struct{}{}
 		}(pinfo)
 	}
@@ -85,7 +85,7 @@ func Bootstrap(ctx context.Context, logger *zap.Logger, dt *dht.IpfsDHT, hst hos
 		i++
 	}
 	if nPeers := len(peers); i < nPeers/2 {
-		fmt.Printf("only connected to %d bootstrap peers out of %d\n", i, nPeers)
+		logger.Warn(fmt.Sprintf("only connected to %d bootstrap peers out of %d\n", i, nPeers))
 	}
 
 	err := dt.Bootstrap(ctx)
