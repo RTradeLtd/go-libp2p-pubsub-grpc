@@ -13,6 +13,7 @@ import (
 
 	pb "github.com/RTradeLtd/go-libp2p-pubsub-grpc/pb"
 	tutil "github.com/RTradeLtd/go-libp2p-pubsub-grpc/testutils"
+	discovery "github.com/libp2p/go-libp2p-discovery"
 	ps "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
 )
@@ -30,7 +31,7 @@ func Test_Server(t *testing.T) {
 	pstore := tutil.NewPeerstore(t)
 	dstore := tutil.NewDatastore(t)
 	addrs := []multiaddr.Multiaddr{tutil.NewMultiaddr(t)}
-	host, _ := tutil.SetupLibp2p(ctx, wg, logger.Desugar(), pk, nil, addrs, pstore, dstore, t)
+	host, dht := tutil.SetupLibp2p(ctx, wg, logger.Desugar(), pk, nil, addrs, pstore, dstore, t)
 	pubsub, err := ps.NewGossipSub(ctx, host)
 	if err != nil {
 		cancel()
@@ -41,6 +42,7 @@ func Test_Server(t *testing.T) {
 			ctx,
 			wg,
 			pubsub,
+			discovery.NewRoutingDiscovery(dht),
 			logger,
 			true,
 			serverProtocol,

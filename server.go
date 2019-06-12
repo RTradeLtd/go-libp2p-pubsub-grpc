@@ -3,12 +3,14 @@ package libpubsubgrpc
 import (
 	"context"
 	"net"
+	"time"
 
 	"sync"
 
 	"io"
 
 	"github.com/RTradeLtd/go-libp2p-pubsub-grpc/pb"
+	discovery "github.com/libp2p/go-libp2p-discovery"
 	ps "github.com/libp2p/go-libp2p-pubsub"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -19,10 +21,11 @@ import (
 type Server struct {
 	pb pb.PubSubServiceServer
 	ps *ps.PubSub
+	sd *discovery.RoutingDiscovery
 }
 
 // NewServer is used to intiialize a pubsub grpc server and run it
-func NewServer(ctx context.Context, wg *sync.WaitGroup, pubsub *ps.PubSub, logger *zap.SugaredLogger, insecure bool, protocol, url string) error {
+func NewServer(ctx context.Context, wg *sync.WaitGroup, pubsub *ps.PubSub, sd *discovery.RoutingDiscovery, logger *zap.SugaredLogger, insecure bool, protocol, url string) error {
 	lis, err := net.Listen(protocol, url)
 	if err != nil {
 		return err
@@ -34,7 +37,7 @@ func NewServer(ctx context.Context, wg *sync.WaitGroup, pubsub *ps.PubSub, logge
 			return err
 		}
 	}
-	srv := &Server{ps: pubsub}
+	srv := &Server{ps: pubsub, sd: sd}
 	gServer := grpc.NewServer(serverOpts...)
 	pb.RegisterPubSubServiceServer(gServer, srv)
 	wg.Add(1)
@@ -75,6 +78,10 @@ func (s *Server) Subscribe(req *pb.SubscribeRequest, stream pb.PubSubService_Sub
 	if err != nil {
 		return err
 	}
+	// we're joining a pubsub room
+	// so we should ensure that we're discovering
+	// peers that are also on this room
+	go s.handleDiscover(req.GetTopic())
 	for {
 		proto2Msg, err := sub.Next(stream.Context())
 		if err != nil {
@@ -103,6 +110,7 @@ func (s *Server) Subscribe(req *pb.SubscribeRequest, stream pb.PubSubService_Sub
 func (s *Server) Publish(stream pb.PubSubService_PublishServer) error {
 	// defer stream closure
 	defer stream.SendAndClose(&pb.Empty{})
+	var sent map[string]bool
 	for {
 		msg, err := stream.Recv()
 		if err != nil && err == io.EOF {
@@ -110,8 +118,32 @@ func (s *Server) Publish(stream pb.PubSubService_PublishServer) error {
 		} else if err != nil {
 			return err
 		}
+		// prevent multiple goroutines for the same topic
+		if !sent[msg.GetTopic()] {
+			sent[msg.GetTopic()] = true
+			go s.handleAnnounce(msg.GetTopic())
+		}
 		if err := s.ps.Publish(msg.GetTopic(), msg.GetData()); err != nil {
 			return err
 		}
 	}
+}
+
+// handleAnnounce is used to handle announcing
+// that we are joining a particular pubsub room
+// or that we're broadcasting messages for a topic
+func (s *Server) handleAnnounce(ns string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	_, err := s.sd.Advertise(ctx, ns)
+	return err
+}
+
+// handleDiscover is used to trigger discovery of
+// peers that are part of a particular pubsub room
+func (s *Server) handleDiscover(ns string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	_, err := s.sd.Advertise(ctx, ns)
+	return err
 }
