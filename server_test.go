@@ -60,7 +60,7 @@ func Test_Server(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	subStream, err := client.Subscribe(ctx, &pb.SubscribeRequest{Topic: "hello"})
+	subStream, err := client.Subscribe(ctx, &pb.SubscribeRequest{Topic: "hello", Discover: true})
 	if err != nil {
 		cancel()
 		t.Fatal(err)
@@ -102,7 +102,7 @@ func Test_Server(t *testing.T) {
 		cancel()
 		t.Fatal(err)
 	}
-	if err := pubStream.Send(&pb.PublishRequest{Topic: "hello", Data: []byte("world")}); err != nil {
+	if err := pubStream.Send(&pb.PublishRequest{Topic: "hello", Data: []byte("world"), Advertise: true}); err != nil {
 		cancel()
 		t.Fatal(err)
 	}

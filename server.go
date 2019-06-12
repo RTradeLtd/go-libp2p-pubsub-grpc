@@ -83,7 +83,9 @@ func (s *Server) Subscribe(req *pb.SubscribeRequest, stream pb.PubSubService_Sub
 	// we're joining a pubsub room
 	// so we should ensure that we're discovering
 	// peers that are also on this room
-	go s.handleDiscover(req.GetTopic())
+	if req.GetDiscover() {
+		go s.handleDiscover(req.GetTopic())
+	}
 	for {
 		proto2Msg, err := sub.Next(stream.Context())
 		if err != nil {
@@ -121,7 +123,8 @@ func (s *Server) Publish(stream pb.PubSubService_PublishServer) error {
 			return err
 		}
 		// prevent multiple goroutines for the same topic
-		if !sent[msg.GetTopic()] {
+		// only advertise if specified
+		if !sent[msg.GetTopic()] && msg.GetAdvertise() {
 			sent[msg.GetTopic()] = true
 			go s.handleAnnounce(msg.GetTopic())
 		}
@@ -152,7 +155,7 @@ func (s *Server) handleDiscover(ns string) error {
 	}
 	for {
 		for peer := range peerChan {
-			s.h.Connect(context.Background(), peer)
+			go s.h.Connect(context.Background(), peer)
 		}
 	}
 }
