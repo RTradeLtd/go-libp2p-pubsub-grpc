@@ -2,6 +2,7 @@ package libpubsubgrpc
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"time"
 
@@ -110,7 +111,7 @@ func (s *Server) Subscribe(req *pb.SubscribeRequest, stream pb.PubSubService_Sub
 func (s *Server) Publish(stream pb.PubSubService_PublishServer) error {
 	// defer stream closure
 	defer stream.SendAndClose(&pb.Empty{})
-	var sent map[string]bool
+	var sent = make(map[string]bool)
 	for {
 		msg, err := stream.Recv()
 		if err != nil && err == io.EOF {
@@ -144,6 +145,13 @@ func (s *Server) handleAnnounce(ns string) error {
 func (s *Server) handleDiscover(ns string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	_, err := s.sd.Advertise(ctx, ns)
-	return err
+	peerChan, err := s.sd.FindPeers(ctx, ns)
+	if err != nil {
+		return err
+	}
+	for {
+		for peer := range peerChan {
+			_, _ = fmt.Printf("%+v\n", peer)
+		}
+	}
 }
