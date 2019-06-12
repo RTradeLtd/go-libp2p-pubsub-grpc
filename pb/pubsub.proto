@@ -57,6 +57,7 @@ message ListPeersResponse {
 message PublishRequest {
     string topic = 1;
     bytes  data  = 2;
+    bool   advertise = 3;
 }
 
 // SubscribeRequest is used to initiate a subscription
