@@ -11,3 +11,8 @@ There's a few ways to use this repository, one is as a stand-alone client+server
 To do this you would import `"github.com/RTradeLtd/go-libp2p-pubsub-grpc/pb` into your code if using Golang, or compile the `.proto` file for whatever language you want.
 
 The server expects you to provide the given libp2p pubsub setup. This allows you to leverage whatever underlying pubsub algorithm (floodsub, gossipsub, etc..) you want, as long as it conforms to the pubsub interface specified in `libp2p/go-libp2p-pubsub`. 
+
+
+# todo:
+
+* once go-libp2p-pubsub has discovery, use it.
