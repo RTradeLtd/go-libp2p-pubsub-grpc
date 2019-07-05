@@ -1,60 +1,56 @@
-package libpubsubgrpc
+package pubsubgrpc_test
 
 import (
 	"context"
 	"fmt"
+	"io"
+	"sync"
 	"testing"
 	"time"
 
-	//"time"
+	"github.com/RTradeLtd/go-libp2p-pubsub-grpc/pb"
 
-	"io"
-	"sync"
-
-	pb "github.com/RTradeLtd/go-libp2p-pubsub-grpc/pb"
-	tutil "github.com/RTradeLtd/go-libp2p-pubsub-grpc/testutils"
+	pubsubgrpc "github.com/RTradeLtd/go-libp2p-pubsub-grpc"
+	testutils "github.com/RTradeLtd/go-libp2p-testutils"
 	discovery "github.com/libp2p/go-libp2p-discovery"
 	ps "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
 )
 
-var (
+const (
 	serverAddr     = "127.0.0.1:9090"
 	serverProtocol = "tcp"
 )
 
-func Test_Server(t *testing.T) {
+func TestPubSubService(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	logger := tutil.NewLogger(t)
-	pk := tutil.NewPrivateKey(t)
-	pstore := tutil.NewPeerstore(t)
-	dstore := tutil.NewDatastore(t)
-	addrs := []multiaddr.Multiaddr{tutil.NewMultiaddr(t)}
-	host, dht := tutil.SetupLibp2p(ctx, wg, logger.Desugar(), pk, nil, addrs, pstore, dstore, t)
+	logger := testutils.NewLogger(t)
+	pk := testutils.NewPrivateKey(t)
+	dstore := testutils.NewDatastore(t)
+	pstore := testutils.NewPeerstore(t)
+	addrs := []multiaddr.Multiaddr{testutils.NewMultiaddr(t)}
+	host, dht := testutils.NewLibp2pHostAndDHT(ctx, t, logger.Desugar(), dstore, pstore, pk, addrs, nil)
 	pubsub, err := ps.NewGossipSub(ctx, host)
 	if err != nil {
 		cancel()
 		t.Fatal(err)
 	}
-	tutil.Bootstrap(ctx, logger.Desugar(), dht, host, tutil.DefaultBootstrapPeers())
+	pubsubService := pubsubgrpc.NewService(pubsub, discovery.NewRoutingDiscovery(dht), host, logger)
+	if err != nil {
+		cancel()
+		t.Fatal(err)
+	}
 	go func() {
-		if err := NewServer(
-			ctx,
-			wg,
-			pubsub,
-			discovery.NewRoutingDiscovery(dht),
-			host,
-			logger,
-			true,
-			serverProtocol,
-			serverAddr,
+		if err := pubsubgrpc.NewServer(
+			ctx, wg, pubsubService, "tcp", serverAddr,
 		); err != nil {
+			cancel()
 			t.Fatal(err)
 		}
 	}()
 
-	client, err := NewClient("", "", "127.0.0.1:9090")
+	client, err := pubsubgrpc.NewClient("", "", serverAddr)
 	if err != nil {
 		cancel()
 		t.Fatal(err)
@@ -65,6 +61,7 @@ func Test_Server(t *testing.T) {
 		cancel()
 		t.Fatal(err)
 	}
+
 	defer subStream.CloseSend()
 	go func() {
 		for {
@@ -96,12 +93,13 @@ func Test_Server(t *testing.T) {
 			}
 		}
 	}()
-	// test publishing
+
 	pubStream, err := client.Publish(ctx)
 	if err != nil {
 		cancel()
 		t.Fatal(err)
 	}
+
 	if err := pubStream.Send(&pb.PublishRequest{Topic: "hello", Data: []byte("world"), Advertise: true}); err != nil {
 		cancel()
 		t.Fatal(err)
@@ -114,6 +112,7 @@ func Test_Server(t *testing.T) {
 		cancel()
 		t.Fatal(err)
 	}
+
 	var foundHelloTopic bool
 	resp, err := client.GetTopics(ctx, &pb.Empty{})
 	if err != nil {
@@ -132,9 +131,10 @@ func Test_Server(t *testing.T) {
 	}
 	// we need to sleep to give enough time for our goroutine
 	// that processes messages to have enough time to pick up the sent messages
-	time.Sleep(time.Second * 30)
+	time.Sleep(time.Second * 15)
 	// end publishing test
 	client.Close()
 	cancel()
+
 	wg.Wait()
 }

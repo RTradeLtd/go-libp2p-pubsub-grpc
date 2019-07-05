@@ -1,12 +1,13 @@
-package libpubsubgrpc
+package pubsubgrpc
 
 import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/RTradeLtd/grpc/dialer"
-	"github.com/RTradeLtd/go-libp2p-pubsub-grpc/pb"
 	"fmt"
+
+	"github.com/RTradeLtd/go-libp2p-pubsub-grpc/pb"
+	"github.com/RTradeLtd/grpc/dialer"
 )
 
 // Client is used to communicate
@@ -19,7 +20,7 @@ type Client struct {
 // NewClient is used to instantiate a pubsub grpc client
 func NewClient(certPath, authKey, url string) (*Client, error) {
 	var (
-		dialOpts   []grpc.DialOption
+		dialOpts []grpc.DialOption
 	)
 	if certPath != "" {
 		creds, err := credentials.NewClientTLSFromFile(certPath, "")
@@ -43,7 +44,7 @@ func NewClient(certPath, authKey, url string) (*Client, error) {
 		return nil, err
 	}
 	return &Client{
-		conn:          conn,
+		conn:                conn,
 		PubSubServiceClient: pb.NewPubSubServiceClient(conn),
 	}, nil
 }

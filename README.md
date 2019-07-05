@@ -1,17 +1,15 @@
-# go-libp2p-pubsub-grpc
+# go-libp2p-pubsub-grpc (pubsubgrpc)
 
-gRPC libp2p pubsub API that uses `proto3`.
-
-Some of the code is borrowed from [libp2p/go-libp2p-daemon](https://github.com/libp2p/go-libp2p-daemon/blob/master/pb/p2pd.proto) and [libp2p/go-libp2p-pubsub](https://github.com/libp2p/go-libp2p-pubsub/tree/master/pb) modified to use proto3, and provide an API over gRPC.
+`pubsubgrpc` provides a LibP2P PubSub framework that can be used as a stand-alone gRPC pubsub server and API, or as a module/component of existing gRPC servers to provide LibP2P PubSub functionality. It uses `proto3` and borrows some ideas from [libp2p/go-libp2p-daemon](https://github.com/libp2p/go-libp2p-daemon/blob/master/pb/p2pd.proto) and [libp2p/go-libp2p-pubsub](https://github.com/libp2p/go-libp2p-pubsub/tree/master/pb).
 
 # usage
 
-There's a few ways to use this repository, one is as a stand-alone client+server pubsub system using the `server.go` and `client.go` files. Alternatively you may use the compiled protobufs in `pb` to implement the API capabilities without your own systems.
+There are two ways of using this library:
 
-To do this you would import `"github.com/RTradeLtd/go-libp2p-pubsub-grpc/pb` into your code if using Golang, or compile the `.proto` file for whatever language you want.
+1) One is to construct a standalone pubsub server with a gRPC api (see `server.go`)
+2) Provide pubsub functionality to already existing gRPC servers (see `pubsubgrpc.go`)
 
-The server expects you to provide the given libp2p pubsub setup. This allows you to leverage whatever underlying pubsub algorithm (floodsub, gossipsub, etc..) you want, as long as it conforms to the pubsub interface specified in `libp2p/go-libp2p-pubsub`. 
-
+If using the standalone pubsub server, there is a golang client in `client.go` that can be used.
 
 # todo:
 
