@@ -42,6 +42,7 @@ func TestPubSubService(t *testing.T) {
 
 	lis, err := net.Listen("tcp", serverAddr)
 	if err != nil {
+		cancel()
 		t.Fatalf("net.Listen(%v) unexpected error\n", err)
 	}
 
