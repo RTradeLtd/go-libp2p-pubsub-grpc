@@ -1,69 +1,54 @@
-package libpubsubgrpc
+package pubsub
 
 import (
 	"context"
-	"net"
+	"io"
 	"time"
 
-	"sync"
-
-	"io"
-
-	"github.com/RTradeLtd/go-libp2p-pubsub-grpc/pb"
+	pb "github.com/RTradeLtd/go-libp2p-pubsub-grpc/pb"
 	"github.com/libp2p/go-libp2p-core/host"
 	discovery "github.com/libp2p/go-libp2p-discovery"
 	ps "github.com/libp2p/go-libp2p-pubsub"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 )
 
-// Server is used to run the libp2p pubsub grpc server
-// it enables communicating pubsub messages over grpc
-type Server struct {
-	pb pb.PubSubServiceServer
+// Service represents a pubsub object
+type Service struct {
+	dev bool
+
 	ps *ps.PubSub
 	sd *discovery.RoutingDiscovery
 	h  host.Host
+
+	l *zap.SugaredLogger
 }
 
-// NewServer is used to intiialize a pubsub grpc server and run it
-func NewServer(ctx context.Context, wg *sync.WaitGroup, pubsub *ps.PubSub, sd *discovery.RoutingDiscovery, h host.Host, logger *zap.SugaredLogger, insecure bool, protocol, url string) error {
-	lis, err := net.Listen(protocol, url)
-	if err != nil {
-		return err
-	}
-	var serverOpts []grpc.ServerOption
-	if !insecure {
-		serverOpts, err = options("", "", "", logger)
-		if err != nil {
-			return err
-		}
-	}
-	srv := &Server{ps: pubsub, sd: sd, h: h}
-	gServer := grpc.NewServer(serverOpts...)
-	pb.RegisterPubSubServiceServer(gServer, srv)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			select {
-			case <-ctx.Done():
-				logger.Info("shutting server down")
-				gServer.GracefulStop()
-				return
-			}
-		}
-	}()
-	return gServer.Serve(lis)
+// NewService creates and returns a new service
+func NewService(
+	dev bool,
+	ps *ps.PubSub,
+	sd *discovery.RoutingDiscovery,
+	h host.Host,
+	logger *zap.SugaredLogger,
+	secured bool,
+	protocol,
+	url string,
+) (*Service, error) {
+	return &Service{
+		dev: dev,
+		ps:  ps,
+		sd:  sd,
+		h:   h,
+	}, nil
 }
 
-// GetTopics is used to return a list of all known topics the pubsub instance is subscribed to.
-func (s *Server) GetTopics(ctx context.Context, req *pb.Empty) (*pb.TopicsResponse, error) {
+// GetTopics returns a TopicsResponse structure
+func (s *Service) GetTopics(ctx context.Context, req *pb.Empty) (*pb.TopicsResponse, error) {
 	return &pb.TopicsResponse{Names: s.ps.GetTopics()}, nil
 }
 
-// ListPeers is used to return a list of peers subscribed to a given topic or topics
-func (s *Server) ListPeers(ctx context.Context, req *pb.ListPeersRequest) (*pb.ListPeersResponse, error) {
+// ListPeers list peers
+func (s *Service) ListPeers(ctx context.Context, req *pb.ListPeersRequest) (*pb.ListPeersResponse, error) {
 	var peers []*pb.ListPeersResponse_Peer
 	for _, topic := range req.GetTopics() {
 		pids := s.ps.ListPeers(topic)
@@ -75,7 +60,7 @@ func (s *Server) ListPeers(ctx context.Context, req *pb.ListPeersRequest) (*pb.L
 }
 
 // Subscribe is used to subscribe to a topic and receive messages
-func (s *Server) Subscribe(req *pb.SubscribeRequest, stream pb.PubSubService_SubscribeServer) error {
+func (s *Service) Subscribe(req *pb.SubscribeRequest, stream pb.PubSubService_SubscribeServer) error {
 	sub, err := s.ps.Subscribe(req.GetTopic())
 	if err != nil {
 		return err
@@ -111,7 +96,7 @@ func (s *Server) Subscribe(req *pb.SubscribeRequest, stream pb.PubSubService_Sub
 }
 
 // Publish is used to send a stream of messages to a pubsub topic.
-func (s *Server) Publish(stream pb.PubSubService_PublishServer) error {
+func (s *Service) Publish(stream pb.PubSubService_PublishServer) error {
 	// defer stream closure
 	defer stream.SendAndClose(&pb.Empty{})
 	var sent = make(map[string]bool)
@@ -137,7 +122,7 @@ func (s *Server) Publish(stream pb.PubSubService_PublishServer) error {
 // handleAnnounce is used to handle announcing
 // that we are joining a particular pubsub room
 // or that we're broadcasting messages for a topic
-func (s *Server) handleAnnounce(ns string) error {
+func (s *Service) handleAnnounce(ns string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	_, err := s.sd.Advertise(ctx, ns)
@@ -146,7 +131,7 @@ func (s *Server) handleAnnounce(ns string) error {
 
 // handleDiscover is used to trigger discovery of
 // peers that are part of a particular pubsub room
-func (s *Server) handleDiscover(ns string) error {
+func (s *Service) handleDiscover(ns string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	peerChan, err := s.sd.FindPeers(ctx, ns)
