@@ -49,7 +49,8 @@ func TestPubSubService(t *testing.T) {
 			t.Fatal(err)
 		}
 	}()
-
+	// wait for the gRPC server to spin up
+	time.Sleep(time.Second * 5)
 	client, err := pubsubgrpc.NewClient("", "", serverAddr)
 	if err != nil {
 		cancel()
