@@ -1,5 +1,8 @@
 # go-libp2p-pubsub-grpc (pubsubgrpc)
 
+[![GoDoc](https://godoc.org/github.com/RTradeLtd/go-libp2p-pubsub-grpc?status.svg)](https://godoc.org/github.com/RTradeLtd/go-libp2p-pubsub-grpc) [![codecov](https://codecov.io/gh/RTradeLtd/go-libp2p-pubsub-grpc/branch/master/graph/badge.svg)](https://codecov.io/gh/RTradeLtd/go-libp2p-pubsub-grpc) [![Build Status](https://travis-ci.com/RTradeLtd/go-libp2p-pubsub-grpc.svg?branch=master)](https://travis-ci.com/RTradeLtd/go-libp2p-pubsub-grpc)
+
+
 `pubsubgrpc` provides a LibP2P PubSub framework that can be used as a stand-alone gRPC pubsub server and API, or as a module/component of existing gRPC servers to provide LibP2P PubSub functionality. It uses `proto3` and borrows some ideas from [libp2p/go-libp2p-daemon](https://github.com/libp2p/go-libp2p-daemon/blob/master/pb/p2pd.proto) and [libp2p/go-libp2p-pubsub](https://github.com/libp2p/go-libp2p-pubsub/tree/master/pb).
 
 # usage
