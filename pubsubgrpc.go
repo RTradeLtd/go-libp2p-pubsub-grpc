@@ -12,42 +12,35 @@ import (
 	"go.uber.org/zap"
 )
 
-// Service represents a pubsub object
+// Service is a libp2p pubsub service component
 type Service struct {
-	dev bool
-
 	ps *ps.PubSub
 	sd *discovery.RoutingDiscovery
 	h  host.Host
-
-	l *zap.SugaredLogger
+	l  *zap.SugaredLogger
 }
 
-// NewService creates and returns a new service
+// NewService creates and returns a new libp2p pubsub service
 func NewService(
-	dev bool,
 	ps *ps.PubSub,
 	sd *discovery.RoutingDiscovery,
 	h host.Host,
-	logger *zap.SugaredLogger,
-	secured bool,
-	protocol,
-	url string,
-) (*Service, error) {
+	l *zap.SugaredLogger,
+) *Service {
 	return &Service{
-		dev: dev,
-		ps:  ps,
-		sd:  sd,
-		h:   h,
-	}, nil
+		ps: ps,
+		sd: sd,
+		h:  h,
+		l:  l,
+	}
 }
 
-// GetTopics returns a TopicsResponse structure
+// GetTopics is used to return a list of all known topics the pubsub instance is subscribed to.
 func (s *Service) GetTopics(ctx context.Context, req *pb.Empty) (*pb.TopicsResponse, error) {
 	return &pb.TopicsResponse{Names: s.ps.GetTopics()}, nil
 }
 
-// ListPeers list peers
+// ListPeers is used to return a list of peers subscribed to a given topic or topics
 func (s *Service) ListPeers(ctx context.Context, req *pb.ListPeersRequest) (*pb.ListPeersResponse, error) {
 	var peers []*pb.ListPeersResponse_Peer
 	for _, topic := range req.GetTopics() {
@@ -119,9 +112,6 @@ func (s *Service) Publish(stream pb.PubSubService_PublishServer) error {
 	}
 }
 
-// handleAnnounce is used to handle announcing
-// that we are joining a particular pubsub room
-// or that we're broadcasting messages for a topic
 func (s *Service) handleAnnounce(ns string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()

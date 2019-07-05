@@ -22,7 +22,7 @@ require (
 	github.com/libp2p/go-libp2p-pubsub v0.1.0
 	github.com/libp2p/go-libp2p-record v0.1.0
 	github.com/multiformats/go-multiaddr v0.0.4
-	github.com/stretchr/objx v0.1.1 // indirect
+	github.com/sirupsen/logrus v1.4.2 // indirect
 	go.uber.org/zap v1.10.0
 	google.golang.org/grpc v1.21.1
 )

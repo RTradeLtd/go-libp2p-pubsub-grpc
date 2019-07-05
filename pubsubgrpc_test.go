@@ -37,20 +37,20 @@ func TestPubSubService(t *testing.T) {
 	pubsub, err := ps.NewGossipSub(ctx, host)
 	if err != nil {
 		cancel()
-		t.Fatalf("ps.NewGossipSub(%v) unexpected error\n", err)
+		t.Fatal(err)
 	}
 
 	lis, err := net.Listen("tcp", serverAddr)
 	if err != nil {
 		cancel()
-		t.Fatalf("net.Listen(%v) unexpected error\n", err)
+		t.Fatal(err)
 	}
 
 	grpcServer := grpc.NewServer()
-	pubsubService, err := pubsubgrpc.NewService(true, pubsub, discovery.NewRoutingDiscovery(dht), host, logger, false, serverProtocol, serverAddr)
+	pubsubService := pubsubgrpc.NewService(pubsub, discovery.NewRoutingDiscovery(dht), host, logger)
 	if err != nil {
 		cancel()
-		t.Fatalf("pubsubgrpc.NewService(%v) unexpected error\n", err)
+		t.Fatal(err)
 	}
 
 	pb.RegisterPubSubServiceServer(grpcServer, pubsubService)
@@ -75,13 +75,13 @@ func TestPubSubService(t *testing.T) {
 	client, err := pubsubgrpc.NewClient("", "", serverAddr)
 	if err != nil {
 		cancel()
-		log.Fatalf("pubsubgrpc.NewClient(%v) unexpected error\n", err)
+		t.Fatal(err)
 	}
 
 	subStream, err := client.Subscribe(ctx, &pb.SubscribeRequest{Topic: "hello", Discover: true})
 	if err != nil {
 		cancel()
-		log.Fatalf("client.Subscribe(%v) unexpected error\n", err)
+		t.Fatal(err)
 	}
 
 	defer subStream.CloseSend()
@@ -119,7 +119,7 @@ func TestPubSubService(t *testing.T) {
 	pubStream, err := client.Publish(ctx)
 	if err != nil {
 		cancel()
-		log.Fatalf("client.Publish(%v) unexpected error\n", err)
+		t.Fatal(err)
 	}
 
 	if err := pubStream.Send(&pb.PublishRequest{Topic: "hello", Data: []byte("world"), Advertise: true}); err != nil {
