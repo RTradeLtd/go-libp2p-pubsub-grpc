@@ -3,7 +3,6 @@ package pubsubgrpc
 import (
 	"context"
 	"io"
-	"time"
 
 	pb "github.com/RTradeLtd/go-libp2p-pubsub-grpc/pb"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -26,8 +25,8 @@ func NewService(
 	sd *discovery.RoutingDiscovery,
 	h host.Host,
 	l *zap.SugaredLogger,
-) *Service {
-	return &Service{
+) Service {
+	return Service{
 		ps: ps,
 		sd: sd,
 		h:  h,
@@ -62,7 +61,7 @@ func (s *Service) Subscribe(req *pb.SubscribeRequest, stream pb.PubSubService_Su
 	// so we should ensure that we're discovering
 	// peers that are also on this room
 	if req.GetDiscover() {
-		go s.handleDiscover(req.GetTopic())
+		go s.handleDiscover(stream.Context(), req.GetTopic())
 	}
 	for {
 		proto2Msg, err := sub.Next(stream.Context())
@@ -104,7 +103,7 @@ func (s *Service) Publish(stream pb.PubSubService_PublishServer) error {
 		// only advertise if specified
 		if !sent[msg.GetTopic()] && msg.GetAdvertise() {
 			sent[msg.GetTopic()] = true
-			go s.handleAnnounce(msg.GetTopic())
+			go s.handleAnnounce(stream.Context(), msg.GetTopic())
 		}
 		if err := s.ps.Publish(msg.GetTopic(), msg.GetData()); err != nil {
 			return err
@@ -112,25 +111,20 @@ func (s *Service) Publish(stream pb.PubSubService_PublishServer) error {
 	}
 }
 
-func (s *Service) handleAnnounce(ns string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
+func (s *Service) handleAnnounce(ctx context.Context, ns string) error {
 	_, err := s.sd.Advertise(ctx, ns)
 	return err
 }
 
 // handleDiscover is used to trigger discovery of
 // peers that are part of a particular pubsub room
-func (s *Service) handleDiscover(ns string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
+func (s *Service) handleDiscover(ctx context.Context, ns string) error {
 	peerChan, err := s.sd.FindPeers(ctx, ns)
 	if err != nil {
 		return err
 	}
-	for {
-		for peer := range peerChan {
-			go s.h.Connect(context.Background(), peer)
-		}
+	for peer := range peerChan {
+		go s.h.Connect(ctx, peer)
 	}
+	return nil
 }
