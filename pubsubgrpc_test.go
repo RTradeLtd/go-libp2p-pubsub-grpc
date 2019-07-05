@@ -64,13 +64,11 @@ func TestPubSubService(t *testing.T) {
 
 	go func(context.Context) {
 		defer wg.Done()
-		for {
-			select {
-			case <-ctx.Done():
-				log.Println("Shutting down the gRPC server...")
-				grpcServer.GracefulStop()
-				return
-			}
+		select {
+		case <-ctx.Done():
+			log.Println("Shutting down the gRPC server...")
+			grpcServer.GracefulStop()
+			return
 		}
 	}(ctx)
 
