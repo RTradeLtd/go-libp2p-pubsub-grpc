@@ -1,4 +1,4 @@
-package pubsub
+package pubsubgrpc
 
 import (
 	"google.golang.org/grpc"

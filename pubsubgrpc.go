@@ -1,4 +1,4 @@
-package pubsub
+package pubsubgrpc
 
 import (
 	"context"
