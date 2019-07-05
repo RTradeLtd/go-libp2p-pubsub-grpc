@@ -1,11 +1,11 @@
-module github.com/RTradeLtd/go-libp2p-pubsub-grpc/pubsub
+module github.com/RTradeLtd/go-libp2p-pubsub-grpc
 
 go 1.12
 
 require (
 	github.com/RTradeLtd/go-libp2p-connmgr v1.0.0
-	github.com/RTradeLtd/go-libp2p-pubsub-grpc v0.0.0-20190612071716-a99d1b5aa836
 	github.com/RTradeLtd/grpc v2.0.0+incompatible
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/protobuf v1.3.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/ipfs/go-datastore v0.0.5
@@ -22,6 +22,8 @@ require (
 	github.com/libp2p/go-libp2p-pubsub v0.1.0
 	github.com/libp2p/go-libp2p-record v0.1.0
 	github.com/multiformats/go-multiaddr v0.0.4
+	github.com/stretchr/objx v0.1.1 // indirect
 	go.uber.org/zap v1.10.0
+	golang.org/x/sys v0.0.0-20190422165155-953cdadca894 // indirect
 	google.golang.org/grpc v1.21.1
 )
