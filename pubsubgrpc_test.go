@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
-	"net"
 	"sync"
 	"testing"
 	"time"
@@ -17,7 +15,6 @@ import (
 	discovery "github.com/libp2p/go-libp2p-discovery"
 	ps "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -27,7 +24,7 @@ const (
 
 func TestPubSubService(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	var wg sync.WaitGroup
+	wg := &sync.WaitGroup{}
 	logger := testutils.NewLogger(t)
 	pk := testutils.NewPrivateKey(t)
 	dstore := testutils.NewDatastore(t)
@@ -39,38 +36,19 @@ func TestPubSubService(t *testing.T) {
 		cancel()
 		t.Fatal(err)
 	}
-
-	lis, err := net.Listen("tcp", serverAddr)
-	if err != nil {
-		cancel()
-		t.Fatal(err)
-	}
-
-	grpcServer := grpc.NewServer()
 	pubsubService := pubsubgrpc.NewService(pubsub, discovery.NewRoutingDiscovery(dht), host, logger)
 	if err != nil {
 		cancel()
 		t.Fatal(err)
 	}
-
-	pb.RegisterPubSubServiceServer(grpcServer, pubsubService)
-
-	wg.Add(2)
 	go func() {
-		defer wg.Done()
-		log.Println("gRPC server started")
-		grpcServer.Serve(lis)
-	}()
-
-	go func(context.Context) {
-		defer wg.Done()
-		select {
-		case <-ctx.Done():
-			log.Println("Shutting down the gRPC server...")
-			grpcServer.GracefulStop()
-			return
+		if err := pubsubgrpc.NewServer(
+			ctx, wg, pubsubService, "tcp", serverAddr,
+		); err != nil {
+			cancel()
+			t.Fatal(err)
 		}
-	}(ctx)
+	}()
 
 	client, err := pubsubgrpc.NewClient("", "", serverAddr)
 	if err != nil {
