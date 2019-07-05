@@ -5,7 +5,6 @@ go 1.12
 require (
 	github.com/RTradeLtd/go-libp2p-connmgr v1.0.0
 	github.com/RTradeLtd/go-libp2p-pubsub-grpc v0.0.0-20190612071716-a99d1b5aa836
-	//github.com/RTradeLtd/go-libp2p-pubsub-grpc v0.0.0-20190612071716-a99d1b5aa836
 	github.com/RTradeLtd/grpc v2.0.0+incompatible
 	github.com/golang/protobuf v1.3.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
